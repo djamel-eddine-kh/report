@@ -8,7 +8,7 @@ This project is a Spring-based application for generating dynamic reports, speci
 - **Excel Report Generation (Planned)**: The system can be extended to support other report formats such as Excel by implementing new strategies.
 - **Flexible Reporting Strategy**: Uses the Strategy design pattern to switch between different report generation strategies at runtime.
 - **Customizable Report Layouts**: Reports are customized with dynamic data and styling (e.g., font styles, colors).
-- **Font Support**: Custom fonts, such as symbols (`\u25A1`), are supported in report designs.
+- **Font Support**: Custom fonts, such as symbols (`\u25A1` □ ), are supported in report designs.
 
 ## Components
 
