@@ -1,43 +1,70 @@
 package dz.protid.it.service;
 
-import dz.protid.it.domain.Invoice;
-import dz.protid.it.domain.Client;
-import dz.protid.it.domain.Order;
-import dz.protid.it.domain.Product;
+
+import dz.protid.it.dto.BonPreparationDto;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ArticleService {
-    private Invoice invoice;
 
+    private List<BonPreparationDto> bonPreparationList;
 
-    //generate a fake Article data to be returned
-
-    public Invoice getInvoice(){
-        return this.invoice;
+    // Method to get the initialized BonPreparationDto
+    public List<BonPreparationDto> getInvoice() {
+        return bonPreparationList;
     }
+
     @PostConstruct
-    private void setArticle(){
-        Client client1 = new Client("SOFYAN LAREBAA", 123);
-        Client client2 = new Client("SOFYAN 2", 124);
-        Client client3 = new Client("AHMED RAFIGO", 125);
+    private void initializeInvoice() {
+        bonPreparationList = new ArrayList<>();
 
-        List<Order> orders = List.of(
-                new Order(7598, 20, client1),
-                new Order(7599, 20, client2),
-                new Order(7597, 50, client3)
-        );
+        // Create and populate BonPreparationPieceDto list
+        bonPreparationList.add(new BonPreparationDto(
+                "Labelle", // libelleDepot
+                "Mohammed", // nomChauffeur
+                101, // codePiece
+                "Margarin", // famillePiece
+                "Margarin 250 g", // nomPie
+                201, // codeClient
+                "Client A", // nomClient
+                10.5 // quantite
+        ));
+        bonPreparationList.add(new BonPreparationDto(
+                "Labelle", // libelleDepot
+                "Mohammed", // nomChauffeur
+                101, // codePiece
+                "Margarin", // famillePiece
+                "Margarin 250 g", // nomPiece
+                202, // codeClient
+                "Client B", // nomClient
+                20.0 // quantite
+        ));
 
-        List<Product> products = List.of(
-                new Product("026", "MARGARINE LABELLE", "MARGARINE LABELLE 250g", 100, orders.subList(0, 2)),
-                new Product("027", "MARGARINE LABELLE", "MARGARINE LABELLE 500g", 200, orders.subList(2, 3))
-        );
+        bonPreparationList.add(new BonPreparationDto(
+                "Depot A", // libelleDepot
+                "Driver 1", // nomChauffeur
+                102, // codePiece
+                "Family 1", // famillePiece
+                "Piece 2", // nomPiece
+                202, // codeClient
+                "Client B", // nomClient
+                15.0 // quantite
+        ));
 
-        this.invoice = new Invoice("Labelle", "Mohamed Master", products);
-
+        bonPreparationList.add(new BonPreparationDto(
+                "Depot A", // libelleDepot
+                "Driver 1", // nomChauffeur
+                103, // codePiece
+                "Family 2", // famillePiece
+                "Piece 3", // nomPiece
+                203, // codeClient
+                "Client C", // nomClient
+                20.0 // quantite
+        ));
+    }
     }
 
-}

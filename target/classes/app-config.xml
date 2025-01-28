@@ -10,41 +10,19 @@
     ">
 
     <!-- Enable Annotation-Based Configuration -->
-    <context:component-scan base-package="dz.protid.it"/> <!-- Scan the root package -->
+    <ctx:component-scan base-package="dz.protid.it"/> <!-- Scan the root package -->
 
     <ctx:annotation-config />
 
     <!-- DataSource Configuration (C3P0 Connection Pool) -->
-    <bean id="myDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
-        <property name="driverClass" value="org.postgresql.Driver" />
-        <property name="jdbcUrl" value="jdbc:postgresql://localhost:5400/springhibernate" />
-        <property name="user" value="djamel" />
-        <property name="password" value="djamel" />
-        <property name="minPoolSize" value="5" />
-        <property name="maxPoolSize" value="10" />
-        <property name="maxIdleTime" value="30000" />
-    </bean>
+
 
     <!-- Hibernate SessionFactory Configuration -->
-    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
-        <property name="dataSource" ref="myDataSource" />
-        <property name="packagesToScan" value="dz.protid.it.domain" />
-        <property name="hibernateProperties">
-            <props>
-                <!-- Use PostgreSQL Dialect -->
-                <prop key="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</prop>
-                <prop key="hibernate.show_sql">true</prop>
-                <prop key="hibernate.format_sql">true</prop>
-                <prop key="hibernate.hbm2ddl.auto">update</prop>
-            </props>
-        </property>
-    </bean>
+
 
 
     <!-- Hibernate Transaction Manager -->
-    <bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
-        <property name="sessionFactory" ref="sessionFactory" />
-    </bean>
+
 
     <!-- Enable Transaction Management -->
 

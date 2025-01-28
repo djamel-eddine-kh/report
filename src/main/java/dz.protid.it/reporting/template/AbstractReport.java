@@ -22,8 +22,6 @@ import static net.sf.dynamicreports.report.builder.DynamicReports.*;
 public abstract class AbstractReport {
     // Constants for consistent styling
     protected static final Color HEADER_BACKGROUND = Color.LIGHT_GRAY;
-    protected static final String MONOSPACE_FONT = "Courier New";
-    protected static final int LINE_LENGTH = 80;
     protected static final int DEFAULT_PADDING = 10;
 
     // Styles
@@ -57,7 +55,7 @@ public abstract class AbstractReport {
                 .setHeadingStyle(0, stl.style(rootStyle).bold());
 
         reportTemplate = template()
-                .setLocale(Locale.ENGLISH)
+                .setLocale(Locale.FRENCH)
                 .setColumnStyle(columnStyle)
                 .setColumnTitleStyle(columnTitleStyle)
                 .setGroupStyle(groupStyle)

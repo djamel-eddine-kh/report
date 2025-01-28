@@ -1,44 +1,53 @@
 package dz.protid.it.reporting;
 
-import dz.protid.it.domain.Invoice;
-import dz.protid.it.domain.Order;
-import dz.protid.it.domain.Product;
+
+import dz.protid.it.dto.BonPreparationDto;
 import dz.protid.it.reporting.template.AbstractReport;
 import net.sf.dynamicreports.jasper.builder.JasperReportBuilder;
+import net.sf.dynamicreports.report.builder.MarginBuilder;
 import net.sf.dynamicreports.report.builder.component.ComponentBuilder;
 import net.sf.dynamicreports.report.builder.component.VerticalListBuilder;
 import net.sf.dynamicreports.report.constant.HorizontalTextAlignment;
 import net.sf.dynamicreports.report.exception.DRException;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import static net.sf.dynamicreports.report.builder.DynamicReports.*;
 
 public class ReportingServiceImpl extends AbstractReport {
 
-    private final Invoice invoice;
+    private final List<BonPreparationDto> bonPreparationList;
+    private final boolean isExcelFormat;
 
-    public ReportingServiceImpl(Object invoice) {
-        this.invoice = (Invoice) invoice;
+    public ReportingServiceImpl(Object bonPreparationList, boolean isExcelFormat) {
+        this.bonPreparationList = (List<BonPreparationDto>) bonPreparationList;
+        this.isExcelFormat = isExcelFormat;
     }
 
     @Override
     public JasperReportBuilder build() throws DRException {
-        return report()
+        JasperReportBuilder reportBuilder = report()
                 .setTemplate(AbstractReport.reportTemplate)
                 .title(createTitleComponent())
                 .pageHeader(createPageHeaderComponent())
-                .pageFooter(cmp.pageXofY())
                 .detail(createDetailComponent())
                 .setDataSource(createDummyDataSource());
-    }
 
+        // Customize for Excel
+        if (isExcelFormat) {
+
+        }
+
+        return reportBuilder;
+    }
     @Override
     protected ComponentBuilder<?, ?> createTitleComponent() {
         return cmp.verticalList(
-                cmp.text("DEPOT " + invoice.getMarqueName())
+                cmp.text(getResourceLabel("depot") + bonPreparationList.get(0).getLibelleDepot())
                         .setStyle(stl.style().bold().setFontSize(18)
                                 .setHorizontalTextAlignment(HorizontalTextAlignment.CENTER)),
                 cmp.verticalGap(10));
@@ -59,42 +68,71 @@ public class ReportingServiceImpl extends AbstractReport {
     @Override
     protected ComponentBuilder<?, ?> createDetailComponent() {
         VerticalListBuilder detailComponent = cmp.verticalList();
-        groupProductsByName().forEach((productName, variants) -> {
-            VerticalListBuilder productGroup = createProductGroup(productName);
-            variants.forEach(product -> productGroup.add(createProductVariant(product)).add(cmp.verticalGap(10)));
-            detailComponent.add(productGroup).add(cmp.verticalGap(15));
+        groupProductsByFamily().forEach((family, products) -> {
+            VerticalListBuilder productGroup = createProductGroup(family);
+
+            groupProductsByPieceName(products).forEach((pieceName, pieceVariants) -> {
+                productGroup.add(createProductVariant(pieceName, pieceVariants)).add(cmp.verticalGap(5));
+            });
+
+            detailComponent.add(productGroup);
         });
         return detailComponent;
     }
 
-    private Map<String, List<Product>> groupProductsByName() {
-        return invoice.getProducts().stream()
-                .collect(Collectors.groupingBy(Product::getProductName));
+    // Grouping by famillePiece and then by nomPiece
+    private Map<String, List<BonPreparationDto>> groupProductsByPieceName(List<BonPreparationDto> products) {
+        return products.stream()
+                .collect(Collectors.groupingBy(BonPreparationDto::getNomPiece));
     }
 
-    private VerticalListBuilder createProductGroup(String productName) {
+
+    private Map<String, List<BonPreparationDto>> groupProductsByFamily() {
+        return bonPreparationList.stream()
+                 // Filter out null values
+                .collect(Collectors.groupingBy(BonPreparationDto::getFamillePiece));
+    }
+
+    private VerticalListBuilder createProductGroup(String family) {
         return cmp.verticalList()
-                .setStyle(stl.style().setPadding(15))
-                .add(cmp.text("Product: " + productName)
+                .setStyle(stl.style().setPadding(5))
+                .add(cmp.text(family)
                         .setStyle(stl.style().bold().setPadding(5)));
     }
 
-    private ComponentBuilder<?, ?> createProductVariant(Product product) {
+    private ComponentBuilder<?, ?> createProductVariant(String pieceName, List<BonPreparationDto> pieceVariants) {
         VerticalListBuilder categoryBox = cmp.verticalList()
                 .setStyle(createBorderedStyle())
-                .add(categoryHeaderComponent(product.getCategory()));
+                .add(categoryHeaderComponent(pieceName)); // Single header for the piece name
 
-        product.getOrders().forEach(order -> categoryBox.add(createOrderLine(order)));
-        return categoryBox.add(createTotalComponent(product));
+        // Add each variant (e.g., client details, quantity)
+        pieceVariants.forEach(product -> categoryBox.add(createOrderLine(product)));
+
+        // Calculate the total quantity for the current piece group
+        double totalQuantity = pieceVariants.stream()
+                .mapToDouble(BonPreparationDto::getQuantite)
+                .sum();
+
+        // Get the piece code from the first variant (assuming all variants have the same codePiece)
+        int pieceCode = pieceVariants.get(0).getCodePiece();
+
+        // Add a total component at the end of the group
+        categoryBox.add(
+                cmp.text(String.format(getResourceLabel("TotalProduit") + " %d - %s  %.2f", pieceCode, pieceName, totalQuantity))
+                        .setStyle(stl.style().bold().setFontSize(10).setHorizontalTextAlignment(HorizontalTextAlignment.RIGHT).setPadding(2)));
+
+        return categoryBox;
     }
 
-    private ComponentBuilder<?, ?> createOrderLine(Order order) {
+
+
+    private ComponentBuilder<?, ?> createOrderLine(BonPreparationDto product) {
         // Define the maximum line width (in characters)
         int maxLineWidth = 75; // Adjust based on your layout
 
         // Create the prefix and suffix
-        String prefix = "BL N:" + order.getBlNumber() + "    " + order.getClient().getName()+"  ";
-        String suffix = "     " + order.getQuantitySold();
+        String prefix = getResourceLabel("BL") + product.getCodeClient() + "    " + product.getNomClient() + "  ";
+        String suffix = "     " + product.getQuantite();
 
         // Calculate the number of dots needed
         int dotsLength = maxLineWidth - (prefix.length() + suffix.length());
@@ -108,32 +146,16 @@ public class ReportingServiceImpl extends AbstractReport {
         String dots = ".".repeat(dotsLength);
 
         // Combine the prefix, dots, and suffix
-        String line = prefix + dots +" \u25A1"+ suffix ;
+        String line = prefix + dots + " \u25A1" + suffix;
 
         return cmp.text(line)
                 .setStyle(stl.style()
                         .setPadding(3)
                         .setFontSize(11));
     }
-    private ComponentBuilder<?, ?> createTotalComponent(Product product) {
-        return cmp.verticalList()
-                .add(cmp.verticalGap(5))
-                .add(cmp.text(String.format("Product Total: %s  %s : %d",
-                                product.getProductCode(),
-                                product.getCategory(),
-                                calculateProductTotal(product)))
-                        .setStyle(stl.style().bold())
-                        .setHorizontalTextAlignment(HorizontalTextAlignment.RIGHT));
-    }
-
-    private int calculateProductTotal(Product product) {
-        return product.getOrders().stream()
-                .mapToInt(Order::getQuantitySold)
-                .sum();
-    }
 
     private ComponentBuilder<?, ?> preparationInfoComponent() {
-        return cmp.text("Bon de preparation : " + invoice.getLivreur())
+        return cmp.text(getResourceLabel("BondePreparation") + bonPreparationList.get(0).getNomChauffeur())
                 .setStyle(stl.style().setFontSize(12));
     }
 
@@ -144,13 +166,29 @@ public class ReportingServiceImpl extends AbstractReport {
     }
 
     private ComponentBuilder<?, ?> marqueInfoComponent() {
-        return cmp.text("Marque " + invoice.getMarqueName())
+        return cmp.text(getResourceLabel("marque") + bonPreparationList.get(0).getLibelleDepot())
                 .setStyle(stl.style().setFontSize(10)
                         .setHorizontalTextAlignment(HorizontalTextAlignment.LEFT));
     }
 
     private ComponentBuilder<?, ?> categoryHeaderComponent(String category) {
-        return cmp.text("Category: " + category)
+        return cmp.text(category)
                 .setStyle(stl.style().bold().setPadding(5));
+    }
+    public String getResourceLabel(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            return ""; // Return empty if key is null or blank
+        }
+        try {
+           // FacesContext context = FacesContext.getCurrentInstance();
+
+            ResourceBundle bundle = ResourceBundle.getBundle("keywords");
+            return bundle.getString(key.trim());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ""; // Return the key if an exception
+
+        }
+
     }
 }
